@@ -137,8 +137,6 @@ const updatePlaylist = asyncHandler(async(req, res) =>{
 
     if([name, description].some((field) => field?.trim() === "")){
         throw new ApiError(401, `${field} is required`);
-    }{
-        throw new ApiError(400, "Fileds are required");
     }
 
     const playlist = await Playlist.findByIdAndUpdate(

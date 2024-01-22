@@ -11,7 +11,7 @@ const getVideoComments = asyncHandler(async (req, res, next) => {
     let { page = 1, limit = 10 } = req.query;
 
     if (videoId || !isValidObjectId(videoId)) {
-        return next(new ApiError(400, "Invalid video ID"))
+        throw new ApiError(400, "Invalid video ID")
     }
 
     page = isNaN(page) ? 1 : Number(page);
@@ -73,17 +73,17 @@ const addCommentToVideo = asyncHandler(async (req, res) => {
     const { content } = req.body;
 
     if (!videoId || !isValidObjectId(videoId)) {
-        return next(new ApiError(400, "Invalid video ID"))
+        throw new ApiError(400, "Invalid video ID")
     }
 
     if (!content || content.trim() === "" || content.trim() === undefined) {
-        return next(new ApiError(400, "Comment content is required"))
+        throw new ApiError(400, "Comment content is required")
     }
 
     const video = await Video.findById(videoId);
 
     if (!video) {
-        return next(new ApiError(404, "Video not found"))
+        throw new ApiError(404, "Video not found")
     }
 
     const userComment = await Comment.create({
@@ -93,8 +93,14 @@ const addCommentToVideo = asyncHandler(async (req, res) => {
     })
 
     if (!userComment) {
-        return next(new ApiError(500, "Something went wrong while adding comment to video"))
+        throw new ApiError(500, "Something went wrong while adding comment to video")
     }
+
+    return res
+    .status(200)
+    .json(
+      new ApiResponse(200, userComment, "User commented to video successfully")
+    );
 })
 
 const updateComment = asyncHandler(async (req, res) => {
@@ -102,15 +108,15 @@ const updateComment = asyncHandler(async (req, res) => {
     const { content } = req.body;
 
     if (!commentId || !isValidObjectId(commentId)) {
-        return next(new ApiError(400, "Invalid comment ID"))
+        throw new ApiError(400, "Invalid comment ID")
     }
 
     if (!content || content.trim() === "" || content.trim() === undefined) {
-        return next(new ApiError(400, "Comment content is required"))
+        throw new ApiError(400, "Comment content is required")
     }
 
     if (comment.commentedBy.toString() !== req.user._id.toString()) {
-        return next(new ApiError(403, "You are not allowed to update this comment"))
+        throw new ApiError(403, "You are not allowed to update this comment")
     }
 
     const updatedComment = await Comment.findByIdAndUpdate(
@@ -124,7 +130,7 @@ const updateComment = asyncHandler(async (req, res) => {
     )
 
     if (!updatedComment) {
-        return next(new ApiError(500, "Something went wrong while updating comment"))
+        throw new ApiError(500, "Something went wrong while updating comment")
     }
 
     return res
@@ -136,17 +142,17 @@ const deleteComment = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
 
     if (!commentId || !isValidObjectId(commentId)) {
-        return next(new ApiError(400, "Invalid comment ID"))
+        throw new ApiError(400, "Invalid comment ID")
     }
 
     if (comment.commentedBy.toString() !== req.user._id.toString()) {
-        return next(new ApiError(403, "You are not allowed to delete this comment"))
+        throw new ApiError(403, "You are not allowed to delete this comment")
     }
 
     const deletedComment = await Comment.findByIdAndDelete(commentId);
 
     if (!deletedComment) {
-        return next(new ApiError(500, "Something went wrong while deleting comment"))
+        throw new ApiError(500, "Something went wrong while deleting comment")
     }
 
     return res
