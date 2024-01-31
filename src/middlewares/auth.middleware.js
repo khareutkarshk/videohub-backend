@@ -5,6 +5,9 @@ import { ApiError } from "../utils/ApiError.js";
 
 export const verifyJwt = asyncHandler(async (req, res, next) => {
     try {
+        if((req.path === "/api/v1/videos/" && req.method === "GET")){
+            next();
+        }
         const token = req.cookies?.accessToken || 
              req.header("Authorization")?.replace("Bearer ", "")
         
