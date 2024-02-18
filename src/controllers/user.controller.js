@@ -111,7 +111,7 @@ const loginUser = asyncHandler(async (req, res) =>{
         throw new ApiError(400, "username or email is required")
     }
     
-    // Here is an alternative of above code based on logic discussed in video:
+    // Here is an alternative of above code:
     // if (!(username || email)) {
     //     throw new ApiError(400, "username or email is required")
         
@@ -189,7 +189,7 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
             throw new ApiError(401, "Invalid Access Token")
         }
     
-        const decodedToken = jwt.verify(
+        const decodedToken = Jwt.verify(
             incomingRefreshToken,
             process.env.REFRESH_TOKEN_SECRET,
         )
