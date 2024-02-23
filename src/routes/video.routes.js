@@ -14,7 +14,7 @@ const router = Router();
 router.use(verifyJwt); // Apply verifyJWT middleware to all routes in this file
 
 // Get all videos
-router.route("/").get(getAllVideos);
+router.route("/getAllVideos").get(getAllVideos);
 
 // Publish a video
 router.route("/publish")

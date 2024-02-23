@@ -58,7 +58,6 @@ const publishVideo = asyncHandler(async (req, res) => {
 
 const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
-
     if (!isValidObjectId(videoId)) {
         throw new ApiError(400, "Invalid video id");
     }
@@ -83,13 +82,60 @@ const getVideoById = asyncHandler(async (req, res) => {
             },
         },
         {
-            $project: {
-                likes: 0,
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
             },
         },
+        {
+            $addFields: {
+                ownerDetails: { $arrayElemAt: ["$ownerDetails", 0] },
+            },
+        },
+        {
+            $lookup: {
+                from: "subscribers", // Adjust this to your subscribers collection name
+                localField: "ownerDetails._id",
+                foreignField: "user", // Assuming this is the field in subscribers collection referring to the user
+                as: "subscribers",
+            },
+        },
+        {
+            $addFields: {
+                subscribersCount: { $size: "$subscribers" },
+            },
+        },
+        {
+            $unset: "subscribers" // Remove the subscribers array from the root level
+        },
+        {
+            $project: {
+                likes: 0,
+                subscribers: 0,
+                "ownerDetails.email": 0,
+                "ownerDetails.password": 0,
+                "ownerDetails.createdAt": 0,
+                "ownerDetails.updatedAt": 0,
+                "ownerDetails.__v": 0,
+                "ownerDetails.refreshToken": 0,
+                "ownerDetails.watchHistory": 0,
+            },
+        },
+        {
+            $addFields: {
+                "ownerDetails.subscribersCount": "$subscribersCount", // Include subscribersCount in ownerDetails
+            },
+        },
+        {
+            $unset: "subscribersCount" // Remove subscribersCount field from the root level
+        }
     ]);
+    
+    
 
-    if (!video) {
+    if (!video || video.length === 0) { // Check if video is falsy or empty array
         throw new ApiError(404, "Video not found");
     }
 
