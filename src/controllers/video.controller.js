@@ -36,9 +36,6 @@ const publishVideo = asyncHandler(async (req, res) => {
     const videoFile = await uploadOnCloudinary(videoLocalPath);
     const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
 
-    console.log('Video', videoFile);
-    console.log('Thumbnail', thumbnail);
-
     const user = await User.findById(req.user?._id).select("-password -refreshToken");
 
     const video = await Video.create({
