@@ -20,13 +20,12 @@ const getVideoComments = asyncHandler(async (req, res) => {
         if (!video) {
             throw new ApiError(404, "Video not found");
         }
-
-        // Match and find all the comments with owner details
         
         const aggregateComments = await Comment.aggregate([
             {
                 $match: {
-                    video: new mongoose.Types.ObjectId(videoId)
+                    video: new mongoose.Types.ObjectId(videoId),
+                    parent: null
                 }
             },
             {
@@ -45,6 +44,42 @@ const getVideoComments = asyncHandler(async (req, res) => {
                             }
                         }
                     ]
+                }
+            },
+            {
+                $lookup: {
+                    from: "comments",
+                    localField: "_id",
+                    foreignField: "parent",
+                    as: "replies",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "users",
+                                localField: "owner",
+                                foreignField: "_id",
+                                as: "owner",
+                                pipeline: [
+                                    {
+                                        $project: {
+                                            _id: 1,
+                                            username: 1,
+                                            fullName: 1,
+                                            avatar: 1
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            $addFields: {
+                                owner: {
+                                    $first: "$owner"
+                                }
+                            }
+                        }
+                    ]
+                
                 }
             },
             {
@@ -68,18 +103,9 @@ const getVideoComments = asyncHandler(async (req, res) => {
     }
 });
 
-
-
-
-
-
 const addCommentToVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
     const { content } = req.body;
-
-    if (!videoId || !isValidObjectId(videoId)) {
-        throw new ApiError(400, "Invalid video ID")
-    }
 
     if (!content || content.trim() === "" || content.trim() === undefined) {
         throw new ApiError(400, "Comment content is required")
@@ -90,7 +116,6 @@ const addCommentToVideo = asyncHandler(async (req, res) => {
     if (!video) {
         throw new ApiError(404, "Video not found")
     }
-    console.log(req.user);
 
     const userComment = await Comment.create({
         content: content.trim(),
@@ -121,7 +146,9 @@ const updateComment = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Comment content is required")
     }
 
-    if (comment.commentedBy.toString() !== req.user._id.toString()) {
+    const comment = await Comment.findById(commentId);
+
+    if (comment.owner.toString() !== req.user._id.toString()) {
         throw new ApiError(403, "You are not allowed to update this comment")
     }
 
@@ -151,7 +178,9 @@ const deleteComment = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid comment ID")
     }
 
-    if (comment.commentedBy.toString() !== req.user._id.toString()) {
+    const comment = await Comment.findById(commentId);
+
+    if (comment.owner._id.toString() !== req.user._id.toString()) {
         throw new ApiError(403, "You are not allowed to delete this comment")
     }
 
@@ -166,9 +195,46 @@ const deleteComment = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, deletedComment, "Delete comment successfully"))
 })
 
+const replyToComment = asyncHandler(async (req, res) => {
+    const { commentId } = req.params;
+    const { content } = req.body;
+
+    if (!commentId || !isValidObjectId(commentId)) {
+        throw new ApiError(400, "Invalid comment ID")
+    }
+
+    if (!content || content.trim() === "" || content.trim() === undefined) {
+        throw new ApiError(400, "Comment content is required")
+    }
+
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+        throw new ApiError(404, "Comment not found")
+    }
+
+    const userComment = await Comment.create({
+        content: content.trim(),
+        video: comment.video,
+        owner: req.user._id,
+        parent: commentId
+    })
+
+    if (!userComment) {
+        throw new ApiError(500, "Something went wrong while adding comment to video")
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, userComment, "User replied to comment successfully")
+        );
+})
+
 export {
     getVideoComments,
     addCommentToVideo,
     updateComment,
     deleteComment,
+    replyToComment
 }
