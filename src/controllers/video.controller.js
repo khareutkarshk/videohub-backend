@@ -80,6 +80,22 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
+                from: "dislikes",
+                localField: "_id",
+                foreignField: "video",
+                as: "dislikes"
+            },
+        },
+        {
+            $addFields: {
+                dislikesCount: { $size: "$dislikes" },
+            }
+        },
+        {
+            $unset: "dislikes"
+        },
+        {
+            $lookup: {
                 from: "users",
                 localField: "owner",
                 foreignField: "_id",
@@ -105,7 +121,7 @@ const getVideoById = asyncHandler(async (req, res) => {
             },
         },
         {
-            $unset: "subscribers" // Remove the subscribers array from the root level
+            $unset: "subscribers", // Remove the subscribers array from the root level
         },
         {
             $project: {

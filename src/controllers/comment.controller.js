@@ -48,6 +48,38 @@ const getVideoComments = asyncHandler(async (req, res) => {
             },
             {
                 $lookup: {
+                    from: "likes",
+                    localField: "_id",
+                    foreignField: "comment",
+                    as: "likes"
+                },
+            },
+            {
+                $addFields: {
+                    likesCount: { $size: "$likes" },
+                }
+            },
+            {
+                $unset: "likes"
+            },
+            {
+                $lookup: {
+                    from: "dislikes",
+                    localField: "_id",
+                    foreignField: "comment",
+                    as: "dislikes"
+                },
+            },
+            {
+                $addFields: {
+                    dislikesCount: { $size: "$dislikes" },
+                }
+            },
+            {
+                $unset: "dislikes"
+            },
+            {
+                $lookup: {
                     from: "comments",
                     localField: "_id",
                     foreignField: "parent",
@@ -77,7 +109,39 @@ const getVideoComments = asyncHandler(async (req, res) => {
                                     $first: "$owner"
                                 }
                             }
-                        }
+                        },
+                        {
+                            $lookup: {
+                                from: "likes",
+                                localField: "_id",
+                                foreignField: "comment",
+                                as: "likes"
+                            },
+                        },
+                        {
+                            $addFields: {
+                                likesCount: { $size: "$likes" },
+                            }
+                        },
+                        {
+                            $unset: "likes"
+                        },
+                        {
+                            $lookup: {
+                                from: "dislikes",
+                                localField: "_id",
+                                foreignField: "comment",
+                                as: "dislikes"
+                            },
+                        },
+                        {
+                            $addFields: {
+                                dislikesCount: { $size: "$dislikes" },
+                            }
+                        },
+                        {
+                            $unset: "dislikes"
+                        },
                     ]
                 
                 }
