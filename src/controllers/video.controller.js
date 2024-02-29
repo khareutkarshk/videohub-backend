@@ -109,9 +109,9 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "subscribers", // Adjust this to your subscribers collection name
-                localField: "ownerDetails._id",
-                foreignField: "user", // Assuming this is the field in subscribers collection referring to the user
+                from: "subscriptions",
+                localField: "owner",
+                foreignField: "channel", // Assuming this is the field in subscribers collection referring to the user
                 as: "subscribers",
             },
         },
@@ -120,9 +120,7 @@ const getVideoById = asyncHandler(async (req, res) => {
                 subscribersCount: { $size: "$subscribers" },
             },
         },
-        {
-            $unset: "subscribers", // Remove the subscribers array from the root level
-        },
+        
         {
             $project: {
                 likes: 0,
